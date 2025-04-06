@@ -6,12 +6,17 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - PORT=${{ shared.PORT }}
-      - SPRING_DATASOURCE_URL=${{ shared.AUTH_DB_URL }}
-      - SPRING_DATASOURCE_USERNAME=${{ shared.AUTH_DB_USERNAME }}
-      - SPRING_DATASOURCE_PASSWORD=${{ shared.AUTH_DB_PASSWORD }}
+      - APP_EMAIL=${{ shared.APP_EMAIL }}
+      - DATABASE_NAME=${{ shared.DATABASE_NAME }}
+      - DEFAULT_PROFILE_IMAGE=${{ shared.DEFAULT_PROFILE_IMAGE }}
+      - ELASTICSEARCH_PASSWORD=${{ shared.ELASTICSEARCH_PASSWORD }}
+      - ELASTICSEARCH_URL=${{ shared.ELASTICSEARCH_URL }}
+      - ELASTICSEARCH_USERNAME=${{ shared.ELASTICSEARCH_USERNAME }}
       - JWT_SECRET=${{ shared.JWT_SECRET }}
-      - JWT_EXPIRATION=${{ shared.JWT_EXPIRATION }}
-      - ALLOWED_ORIGINS=${{ shared.ALLOWED_ORIGINS }}
       - KAFKA_BOOTSTRAP_SERVERS=${{ shared.KAFKA_BOOTSTRAP_SERVERS }}
+      - MAIL_MODIFIED_USERNAME=${{ shared.MAIL_MODIFIED_USERNAME }}
+      - MAIL_PASSWORD=${{ shared.MAIL_PASSWORD }}
+      - MAIL_REGISTER_CONFIRMATION_LINK=${{ shared.MAIL_REGISTER_CONFIRMATION_LINK }}
+      - MONGO_URI=${{ shared.MONGO_URI }}
+      - RESET_PASSWORD_LINK=${{ shared.RESET_PASSWORD_LINK }}
     restart: always

@@ -1,0 +1,69 @@
+{
+  "properties": [
+    {
+      "name": "supmap.properties.app-email",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.app-email."
+    },
+    {
+      "name": "supmap.properties.database-name",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.database-name."
+    },
+    {
+      "name": "supmap.properties.default-profile-image",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.default-profile-image."
+    },
+    {
+      "name": "supmap.properties.elasticsearch-password",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.elasticsearch-password."
+    },
+    {
+      "name": "supmap.properties.elasticsearch-url",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.elasticsearch-url."
+    },
+    {
+      "name": "supmap.properties.elasticsearch-username",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.elasticsearch-username."
+    },
+    {
+      "name": "supmap.properties.jwt-secret",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.jwt-secret."
+    },
+    {
+      "name": "supmap.properties.kafka-bootstrap-servers",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.kafka-bootstrap-servers."
+    },
+    {
+      "name": "supmap.properties.mail-modified-username",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.mail-modified-username."
+    },
+    {
+      "name": "supmap.properties.mail-password",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.mail-password."
+    },
+    {
+      "name": "supmap.properties.mongo-uri",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.mongo-uri."
+    },
+    {
+      "name": "supmap.properties.mail-register-confirmation-link",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.mail-register-confirmation-link."
+    },
+    {
+      "name": "supmap.properties.reset-password-link",
+      "type": "java.lang.String",
+      "description": "Description for supmap.properties.reset-password-link."
+    }
+  ]
+}
