@@ -15,6 +15,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.util.backoff.ExponentialBackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
@@ -38,18 +39,16 @@ public class KafkaConfiguration {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "authentication-service-group");
+        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "authentication-service-client");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000);
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 50);
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000);
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 3000);
-
-        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "authentication-service-client");
         props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1);
-        props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 500);
-
+        props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 300);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
@@ -57,19 +56,28 @@ public class KafkaConfiguration {
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-        factory.setConcurrency(1);
+
+        factory.setConcurrency(3);
+
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
         factory.getContainerProperties().setMissingTopicsFatal(false);
         factory.getContainerProperties().setSyncCommits(true);
 
+        ExponentialBackOff backOff = new ExponentialBackOff(1000L, 2.0);
+        backOff.setMaxElapsedTime(10000L);
+
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(
-                (record, exception) -> log.error("Error in consumer: topic={}, partition={}, offset={}, exception={}",
-                        record.topic(), record.partition(), record.offset(), exception.getMessage()),
-                new FixedBackOff(1000L, 3)
+                (record, exception) -> {
+                    log.error("Erreur de traitement: topic={}, partition={}, offset={}, exception={}",
+                            record.topic(), record.partition(), record.offset(), exception.getMessage(), exception);
+                },
+                backOff
         );
+
         factory.setCommonErrorHandler(errorHandler);
         return factory;
     }
+
 
     @PostConstruct
     public void logKafkaConfig() {
@@ -77,16 +85,15 @@ public class KafkaConfiguration {
             Properties props = new Properties();
             props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, envConfiguration.getKafkaBootstrapServers());
 
-            AdminClient adminClient = AdminClient.create(props);
-            Set<String> topics = adminClient.listTopics().names().get();
+            try (AdminClient adminClient = AdminClient.create(props)) {
+                Set<String> topics = adminClient.listTopics().names().get();
 
-            log.info("Kafka configuration initialized");
-            log.info("Bootstrap servers: {}", envConfiguration.getKafkaBootstrapServers());
-            log.info("Available topics: {}", topics);
-
-            adminClient.close();
+                log.info("Kafka configuration initialisée avec succès");
+                log.info("Bootstrap servers: {}", envConfiguration.getKafkaBootstrapServers());
+                log.info("Topics disponibles: {}", topics);
+            }
         } catch (Exception e) {
-            log.error("Error connecting to Kafka", e);
+            log.error("Erreur lors de la connexion à Kafka", e);
         }
     }
 }

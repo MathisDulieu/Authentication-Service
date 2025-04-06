@@ -25,17 +25,19 @@ public class Consumer {
     private final RegistrationService registrationService;
 
     @KafkaListener(
-            topics = "authentication-service",
-            groupId = "authentication-service-group",
+            topics = "${kafka.topics.authentication-service:authentication-service}",
+            groupId = "${kafka.consumer.group-id:authentication-service-group}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consumeAuthenticationMessages(
             @Payload String value,
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) Integer partition,
             Acknowledgment acknowledgment
     ) {
         try {
-            log.info("Received message: topic=authentication-service, key={}", key);
+            log.info("Received message: topic={}, partition={}, key={}", topic, partition, key);
             KafkaMessage kafkaMessage = objectMapper.readValue(value, KafkaMessage.class);
 
             processMessage(key, kafkaMessage);
@@ -45,6 +47,8 @@ public class Consumer {
 
         } catch (Exception e) {
             log.error("Error processing message with key {}: {}", key, e.getMessage(), e);
+            acknowledgment.acknowledge();
+            log.info("Message with error acknowledged: key={}", key);
         }
     }
 
