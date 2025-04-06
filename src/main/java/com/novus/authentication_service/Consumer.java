@@ -13,6 +13,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -20,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
+@EnableScheduling
 @RequiredArgsConstructor
 public class Consumer {
 
@@ -34,10 +37,20 @@ public class Consumer {
 
     @PostConstruct
     public void startConsumer() {
+        log.info("Starting Kafka consumer thread");
         running.set(true);
-        consumerThread = new Thread(this::consume);
+        consumerThread = new Thread(() -> {
+            try {
+                log.info("Consumer thread initializing");
+                log.info("Consumer subscriptions: {}", kafkaConsumer.subscription());
+                consume();
+            } catch (Exception e) {
+                log.error("Error in consumer thread initialization: {}", e.getMessage(), e);
+            }
+        });
+        consumerThread.setName("kafka-consumer-thread");
         consumerThread.start();
-        log.info("🚀 Authentication Service Kafka Consumer started");
+        log.info("🚀 Authentication Service Kafka Consumer started on thread: {}", consumerThread.getName());
     }
 
     @PreDestroy
@@ -50,18 +63,40 @@ public class Consumer {
         log.info("🛑 Authentication Service Kafka Consumer stopped");
     }
 
-    @Async("consumerTaskExecutor")
     public void consume() {
+        log.info("Consumer thread started, beginning to poll for messages");
         try {
             while (running.get()) {
+                log.debug("Polling for messages...");
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(100));
+                log.debug("Poll completed. Records received: {}", records.count());
+
                 for (ConsumerRecord<String, String> record : records) {
+                    log.info("Received message: topic={}, partition={}, offset={}, key={}",
+                            record.topic(), record.partition(), record.offset(), record.key());
                     processMessage(record.key(), record.value());
                 }
-                kafkaConsumer.commitSync();
+
+                if (records.count() > 0) {
+                    log.debug("Committing offsets...");
+                    kafkaConsumer.commitSync();
+                    log.debug("Offsets committed");
+                }
             }
         } catch (Exception e) {
             log.error("Error in Kafka consumer: {}", e.getMessage(), e);
+        }
+        log.info("Consumer thread stopped");
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void checkConsumerHealth() {
+        if (consumerThread != null && !consumerThread.isAlive()) {
+            log.warn("Consumer thread is not alive! Restarting...");
+            stopConsumer();
+            startConsumer();
+        } else {
+            log.info("Consumer thread is healthy. Subscribed to: {}", kafkaConsumer.subscription());
         }
     }
 
