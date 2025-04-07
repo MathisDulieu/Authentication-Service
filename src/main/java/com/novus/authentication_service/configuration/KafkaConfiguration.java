@@ -5,8 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewPartitions;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -18,10 +21,7 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.ExponentialBackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @EnableKafka
@@ -81,6 +81,56 @@ public class KafkaConfiguration {
 
         factory.setCommonErrorHandler(errorHandler);
         return factory;
+    }
+
+    @Bean
+    public ApplicationRunner kafkaInit(EnvConfiguration envConfiguration) {
+        return args -> {
+            try {
+                Properties props = new Properties();
+                props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, envConfiguration.getKafkaBootstrapServers());
+                props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);
+
+                try (AdminClient adminClient = AdminClient.create(props)) {
+                    // Vérifier si le topic existe
+                    Set<String> topics = adminClient.listTopics().names().get();
+                    log.info("Topics disponibles: {}", topics);
+
+                    // Forcer la création du topic s'il n'existe pas
+                    if (!topics.contains("authentication-service")) {
+                        log.info("Création du topic authentication-service");
+                        adminClient.createTopics(Collections.singletonList(
+                                new NewTopic("authentication-service", 3, (short) 1)
+                        )).all().get();
+                    } else {
+                        // Vérifier les partitions
+                        adminClient.describeTopics(Collections.singletonList("authentication-service"))
+                                .allTopicNames().get().forEach((name, desc) -> {
+                                    log.info("Topic {} a {} partitions", name, desc.partitions().size());
+                                    if (desc.partitions().size() < 3) {
+                                        try {
+                                            log.info("Mise à jour du nombre de partitions à 3");
+                                            Map<String, NewPartitions> newPartitions = new HashMap<>();
+                                            newPartitions.put("authentication-service", NewPartitions.increaseTo(3));
+                                            adminClient.createPartitions(newPartitions).all().get();
+                                        } catch (Exception e) {
+                                            log.error("Échec de la mise à jour des partitions: {}", e.getMessage());
+                                        }
+                                    }
+                                });
+                    }
+
+                    // Essayer d'initialiser le groupe de consommateurs
+                    log.info("Initialisation du groupe de consommateurs");
+                    // Cette opération forcera Kafka à créer le coordinateur de groupe
+                    adminClient.listConsumerGroups().valid().get().forEach(group -> {
+                        log.info("Groupe existant: {}", group.groupId());
+                    });
+                }
+            } catch (Exception e) {
+                log.error("Erreur lors de l'initialisation Kafka: {}", e.getMessage(), e);
+            }
+        };
     }
 
 

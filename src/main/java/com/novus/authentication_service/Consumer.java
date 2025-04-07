@@ -29,8 +29,15 @@ public class Consumer {
 
     @KafkaListener(
             topics = "authentication-service",
-            groupId = "authentication-service-group",
-            containerFactory = "kafkaListenerContainerFactory"
+            groupId = "authentication-service-group-new",
+            containerFactory = "kafkaListenerContainerFactory",
+            autoStartup = "true",
+            concurrency = "1",
+            properties = {
+                    "max.poll.interval.ms:600000",
+                    "session.timeout.ms:60000",
+                    "heartbeat.interval.ms:20000"
+            }
     )
     public void consumeAuthenticationMessages(
             @Payload String value,
