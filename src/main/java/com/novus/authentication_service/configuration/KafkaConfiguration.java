@@ -45,10 +45,14 @@ public class KafkaConfiguration {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 50);
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000);
-        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 3000);
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000);  // Augmenter à 30s
+        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);  // Augmenter à 10s
         props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1);
-        props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 300);
+        props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 500);
+        props.put(ConsumerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);  // Attendre 1s entre les tentatives
+        props.put(ConsumerConfig.RECONNECT_BACKOFF_MS_CONFIG, 1000);  // Attendre 1s avant de reconnecter
+        props.put(ConsumerConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG, 10000);  // Max 10s
+        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000);  // 5 min
 
         return new DefaultKafkaConsumerFactory<>(props);
     }
@@ -62,8 +66,8 @@ public class KafkaConfiguration {
         factory.getContainerProperties().setMissingTopicsFatal(false);
         factory.getContainerProperties().setSyncCommits(true);
 
-        ExponentialBackOff backOff = new ExponentialBackOff(1000L, 2.0);
-        backOff.setMaxElapsedTime(10000L);
+        ExponentialBackOff backOff = new ExponentialBackOff(2000L, 2.0);
+        backOff.setMaxElapsedTime(60000L);
 
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(
                 (record, exception) -> {
@@ -72,6 +76,8 @@ public class KafkaConfiguration {
                 },
                 backOff
         );
+
+        errorHandler.addRetryableExceptions(org.apache.kafka.common.errors.CoordinatorNotAvailableException.class);
 
         factory.setCommonErrorHandler(errorHandler);
         return factory;
