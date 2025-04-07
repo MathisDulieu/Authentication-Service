@@ -17,12 +17,18 @@ public class Consumer {
 
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
+    private static final String groupId = "diagnostic-ddiahmvoo5978";
+
     @PostConstruct
     public void init() {
         logger.info("Initialisation du consumer Kafka - prêt à recevoir des messages");
     }
 
-    @KafkaListener(topics = "authentication-service", groupId = "authentication-groupId-test")
+    @KafkaListener(
+            topics = "authentication-service",
+            groupId = groupId,
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void listen(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
@@ -31,18 +37,28 @@ public class Consumer {
             @Header(KafkaHeaders.OFFSET) long offset,
             Acknowledgment acknowledgment
     ) {
-        logger.info("Message reçu: {}", message);
+        logger.info("=======================================================");
+        logger.info("MESSAGE REÇU - Détails:");
+        logger.info("Topic: {}", topic);
+        logger.info("Partition: {}", partition);
+        logger.info("Offset: {}", offset);
+        logger.info("Clé: {}", key);
+        logger.info("Contenu: {}", message);
+        logger.info("=======================================================");
+
         try {
             processMessage(key, message);
+
             acknowledgment.acknowledge();
+            logger.info("Message traité avec succès - Offset: {}", offset);
         } catch (Exception e) {
-            logger.error("Erreur de traitement", e);
+            logger.error("ERREUR lors du traitement du message: {}", e.getMessage(), e);
         }
     }
 
-
     private void processMessage(String key, String message) {
         logger.info("Début du traitement du message - Clé: {}", key);
+
 
         logger.info("Fin du traitement du message - Clé: {}", key);
     }

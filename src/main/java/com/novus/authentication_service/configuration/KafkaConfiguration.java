@@ -15,6 +15,7 @@ import org.springframework.kafka.listener.ContainerProperties;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @EnableKafka
@@ -26,27 +27,22 @@ public class KafkaConfiguration {
 
     private static final String bootstrapServers = "kafka.railway.internal:29092";
 
-    private static final String groupId = "authentication-groupId";
-
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "diagnostic-" + UUID.randomUUID());
+
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);
 
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 5000);
 
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 60000);
-        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 20000);
-        props.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, 5000);
-        props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 60000);
-
-        log.info("Configuration consumer - Bootstrap servers: {}, Group ID: {}, Auto-commit: enabled",
-                bootstrapServers, groupId);
+        log.info("Configuration consumer - Bootstrap servers: {}, Group ID: {}", bootstrapServers, props.get(ConsumerConfig.GROUP_ID_CONFIG));
 
         return new DefaultKafkaConsumerFactory<>(props);
     }
@@ -57,17 +53,13 @@ public class KafkaConfiguration {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
 
-        // Utiliser le mode BATCH ou RECORD avec auto-commit
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
 
-        // Augmenter les timeouts pour les problèmes de réseau
+        factory.getContainerProperties().setSyncCommits(true);
+
         factory.getContainerProperties().setPollTimeout(5000);
 
-        // Configuration pour les topics manquants
-        factory.getContainerProperties().setMissingTopicsFatal(false);
-
-        // Amélioration des logs
-        factory.getContainerProperties().setLogContainerConfig(true);
+        log.info("Kafka Listener configuré avec AckMode.MANUAL_IMMEDIATE et timeout 5000ms");
 
         return factory;
     }
