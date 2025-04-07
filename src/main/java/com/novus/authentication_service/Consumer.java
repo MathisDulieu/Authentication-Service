@@ -34,21 +34,28 @@ public class Consumer {
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             @Header(KafkaHeaders.RECEIVED_PARTITION) Integer partition,
+            @Header(KafkaHeaders.RECEIVED_TIMESTAMP) Long timestamp,
             Acknowledgment acknowledgment
     ) {
         try {
-            log.info("Received message: topic={}, partition={}, key={}", topic, partition, key);
+            log.info("Received message: topic={}, partition={}, key={}, timestamp={}",
+                    topic, partition, key, timestamp);
+
             KafkaMessage kafkaMessage = objectMapper.readValue(value, KafkaMessage.class);
 
+            log.info("Message deserialized successfully for key: {}", key);
             processMessage(key, kafkaMessage);
 
+            // Acknowledge the message after successful processing
             acknowledgment.acknowledge();
             log.info("Message processed and acknowledged: key={}", key);
 
         } catch (Exception e) {
             log.error("Error processing message with key {}: {}", key, e.getMessage(), e);
+            // Still acknowledge the message to prevent retries that will likely fail again
+            // You might want to implement a dead letter queue pattern for failed messages
             acknowledgment.acknowledge();
-            log.info("Message with error acknowledged: key={}", key);
+            log.info("Message with error acknowledged (will not retry): key={}", key);
         }
     }
 

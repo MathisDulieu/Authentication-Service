@@ -49,6 +49,7 @@ public class KafkaConfiguration {
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 3000);
         props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1);
         props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 300);
+
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
@@ -56,9 +57,7 @@ public class KafkaConfiguration {
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-
         factory.setConcurrency(3);
-
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
         factory.getContainerProperties().setMissingTopicsFatal(false);
         factory.getContainerProperties().setSyncCommits(true);
@@ -68,7 +67,7 @@ public class KafkaConfiguration {
 
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(
                 (record, exception) -> {
-                    log.error("Erreur de traitement: topic={}, partition={}, offset={}, exception={}",
+                    log.error("Processing error: topic={}, partition={}, offset={}, exception={}",
                             record.topic(), record.partition(), record.offset(), exception.getMessage(), exception);
                 },
                 backOff
@@ -88,12 +87,12 @@ public class KafkaConfiguration {
             try (AdminClient adminClient = AdminClient.create(props)) {
                 Set<String> topics = adminClient.listTopics().names().get();
 
-                log.info("Kafka configuration initialisée avec succès");
+                log.info("Kafka configuration initialized successfully");
                 log.info("Bootstrap servers: {}", envConfiguration.getKafkaBootstrapServers());
-                log.info("Topics disponibles: {}", topics);
+                log.info("Available topics: {}", topics);
             }
         } catch (Exception e) {
-            log.error("Erreur lors de la connexion à Kafka", e);
+            log.error("Error connecting to Kafka", e);
         }
     }
 }
