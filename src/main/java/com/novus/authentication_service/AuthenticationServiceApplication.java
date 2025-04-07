@@ -15,7 +15,6 @@ import java.util.TimeZone;
 
 @Slf4j
 @SpringBootApplication(scanBasePackages = "com.novus.authentication_service")
-@EnableConfigurationProperties(KafkaConfiguration.class)
 public class AuthenticationServiceApplication {
 
 	public static void main(String[] args) {
