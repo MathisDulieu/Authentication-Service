@@ -36,16 +36,7 @@ public class KafkaConfiguration {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-
-        // Configuration pour aider à résoudre le problème de coordinateur
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 60000); // 60 secondes
-        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 20000); // 20 secondes
-        props.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, 5000); // 5 secondes
-        props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 60000); // 60 secondes
-        props.put(ConsumerConfig.RETRY_BACKOFF_MS_CONFIG, 1000); // 1 seconde
-
-        log.info("Configuration consumer - Bootstrap servers: {}, Group ID: {}", bootstrapServers, groupId);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 
         return new DefaultKafkaConsumerFactory<>(props);
     }

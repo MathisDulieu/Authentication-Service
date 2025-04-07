@@ -25,32 +25,21 @@ public class Consumer {
     @KafkaListener(
             topics = "authentication-service",
             groupId = "authentication-groupId",
-            containerFactory = "kafkaListenerContainerFactory",
-            autoStartup = "true"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     public void listen(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-            @Header(KafkaHeaders.OFFSET) long offset,
-            Acknowledgment acknowledgment
+            @Header(KafkaHeaders.OFFSET) long offset
     ) {
-        logger.info("=======================================================");
-        logger.info("MESSAGE REÇU - Détails:");
-        logger.info("Topic: {}", topic);
-        logger.info("Partition: {}", partition);
-        logger.info("Offset: {}", offset);
-        logger.info("Clé: {}", key);
-        logger.info("Contenu: {}", message);
-        logger.info("=======================================================");
+        logger.info("MESSAGE REÇU - Topic: {}, Partition: {}, Offset: {}, Clé: {}",
+                topic, partition, offset, key);
 
         try {
             processMessage(key, message);
-
-            // Acquittement manuel du message
-            acknowledgment.acknowledge();
-            logger.info("Message acquitté avec succès - Offset: {}", offset);
+            logger.info("Message traité avec succès");
         } catch (Exception e) {
             logger.error("ERREUR lors du traitement du message: {}", e.getMessage(), e);
         }
