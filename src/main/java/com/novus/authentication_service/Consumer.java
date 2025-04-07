@@ -22,7 +22,7 @@ public class Consumer {
         logger.info("Initialisation du consumer Kafka - prêt à recevoir des messages");
     }
 
-    @KafkaListener(topics = "authentication-service", groupId = "authentication-groupId")
+    @KafkaListener(topics = "authentication-service", groupId = "authentication-groupId-test")
     public void listen(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
