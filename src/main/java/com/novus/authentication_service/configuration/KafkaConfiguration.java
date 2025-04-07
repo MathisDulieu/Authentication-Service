@@ -10,6 +10,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.ContainerProperties;
 
 import java.util.HashMap;
@@ -37,11 +38,12 @@ public class KafkaConfiguration {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
-        // Configuration supplémentaire pour améliorer la stabilité
-        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);
-        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000); // 5 minutes
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000); // 30 secondes
-        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000); // 10 secondes
+        // Configuration pour aider à résoudre le problème de coordinateur
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 60000); // 60 secondes
+        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 20000); // 20 secondes
+        props.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, 5000); // 5 secondes
+        props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 60000); // 60 secondes
+        props.put(ConsumerConfig.RETRY_BACKOFF_MS_CONFIG, 1000); // 1 seconde
 
         log.info("Configuration consumer - Bootstrap servers: {}, Group ID: {}", bootstrapServers, groupId);
 
@@ -55,6 +57,13 @@ public class KafkaConfiguration {
         factory.setConsumerFactory(consumerFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
 
+        // Augmenter les timeouts pour les problèmes de réseau
+        factory.getContainerProperties().setPollTimeout(5000);
+
+        // Configuration manuelle du coordinateur
+        factory.getContainerProperties().setMissingTopicsFatal(false);
+
+        // Amélioration des logs
         factory.getContainerProperties().setLogContainerConfig(true);
 
         return factory;

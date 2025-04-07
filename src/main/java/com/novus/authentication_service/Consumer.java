@@ -1,5 +1,6 @@
 package com.novus.authentication_service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +17,16 @@ public class Consumer {
 
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
+    @PostConstruct
+    public void init() {
+        logger.info("Initialisation du consumer Kafka - prêt à recevoir des messages");
+    }
+
     @KafkaListener(
             topics = "authentication-service",
             groupId = "authentication-groupId",
-            containerFactory = "kafkaListenerContainerFactory"
+            containerFactory = "kafkaListenerContainerFactory",
+            autoStartup = "true"
     )
     public void listen(
             @Payload String message,
@@ -46,8 +53,6 @@ public class Consumer {
             logger.info("Message acquitté avec succès - Offset: {}", offset);
         } catch (Exception e) {
             logger.error("ERREUR lors du traitement du message: {}", e.getMessage(), e);
-            // Vous pourriez décider de ne pas acquitter le message en cas d'erreur
-            // pour qu'il soit relivré, selon votre stratégie de gestion des erreurs
         }
     }
 
