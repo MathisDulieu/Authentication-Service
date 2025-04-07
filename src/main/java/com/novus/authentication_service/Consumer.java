@@ -28,8 +28,8 @@ public class Consumer {
     private final RegistrationService registrationService;
 
     @KafkaListener(
-            topics = "${kafka.topics.authentication-service:authentication-service}",
-            groupId = "${kafka.consumer.group-id:authentication-service-group}",
+            topics = "${kafka.topics.authentication-service}",
+            groupId = "${kafka.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consumeAuthenticationMessages(

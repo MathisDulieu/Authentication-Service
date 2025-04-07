@@ -83,16 +83,28 @@ public class KafkaConfiguration {
         try {
             Properties props = new Properties();
             props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, envConfiguration.getKafkaBootstrapServers());
+            props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
 
             try (AdminClient adminClient = AdminClient.create(props)) {
                 Set<String> topics = adminClient.listTopics().names().get();
 
-                log.info("Kafka configuration initialized successfully");
+                log.info("=== CONFIGURATION KAFKA ===");
                 log.info("Bootstrap servers: {}", envConfiguration.getKafkaBootstrapServers());
-                log.info("Available topics: {}", topics);
+                log.info("Topics disponibles: {}", topics);
+
+                if (topics.contains("authentication-service")) {
+                    log.info("Topic 'authentication-service' trouvé !");
+                    adminClient.listConsumerGroups().valid().get().forEach(group -> {
+                        log.info("Groupe consommateur: {}", group.groupId());
+                    });
+                } else {
+                    log.warn("Topic 'authentication-service' NON TROUVÉ! Topics existants: {}", topics);
+                }
+
+                log.info("=== FIN CONFIGURATION KAFKA ===");
             }
         } catch (Exception e) {
-            log.error("Error connecting to Kafka", e);
+            log.error("Erreur lors de la connexion à Kafka", e);
         }
     }
 
