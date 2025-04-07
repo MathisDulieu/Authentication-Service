@@ -29,12 +29,12 @@ public class Consumer {
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) long offset,
-            Acknowledgment acknowledgment  // Ajout pour ACK manuel
+            Acknowledgment acknowledgment
     ) {
         logger.info("Message reçu: {}", message);
         try {
             processMessage(key, message);
-            acknowledgment.acknowledge();  // Validation manuelle de l'offset
+            acknowledgment.acknowledge();
         } catch (Exception e) {
             logger.error("Erreur de traitement", e);
         }
@@ -43,8 +43,6 @@ public class Consumer {
 
     private void processMessage(String key, String message) {
         logger.info("Début du traitement du message - Clé: {}", key);
-
-        // Votre logique de traitement ici
 
         logger.info("Fin du traitement du message - Clé: {}", key);
     }
