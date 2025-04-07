@@ -57,7 +57,7 @@ public class KafkaConfiguration {
 
         factory.getContainerProperties().setSyncCommits(true);
 
-        factory.getContainerProperties().setPollTimeout(5000);
+        factory.getContainerProperties().setPollTimeout(20000);
 
         log.info("Kafka Listener configuré avec AckMode.MANUAL_IMMEDIATE et timeout 5000ms");
 
