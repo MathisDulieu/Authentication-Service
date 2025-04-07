@@ -22,35 +22,24 @@ public class Consumer {
         logger.info("Initialisation du consumer Kafka - prêt à recevoir des messages");
     }
 
-    @KafkaListener(
-            topics = "authentication-service",
-            groupId = "authentication-groupId",
-            containerFactory = "kafkaListenerContainerFactory",
-            autoStartup = "true"
-    )
+    @KafkaListener(topics = "authentication-service", groupId = "authentication-groupId")
     public void listen(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-            @Header(KafkaHeaders.OFFSET) long offset
+            @Header(KafkaHeaders.OFFSET) long offset,
+            Acknowledgment acknowledgment  // Ajout pour ACK manuel
     ) {
-        logger.info("=======================================================");
-        logger.info("MESSAGE REÇU - Détails:");
-        logger.info("Topic: {}", topic);
-        logger.info("Partition: {}", partition);
-        logger.info("Offset: {}", offset);
-        logger.info("Clé: {}", key);
-        logger.info("Contenu: {}", message);
-        logger.info("=======================================================");
-
+        logger.info("Message reçu: {}", message);
         try {
             processMessage(key, message);
-            logger.info("Message traité avec succès - Offset: {}", offset);
+            acknowledgment.acknowledge();  // Validation manuelle de l'offset
         } catch (Exception e) {
-            logger.error("ERREUR lors du traitement du message: {}", e.getMessage(), e);
+            logger.error("Erreur de traitement", e);
         }
     }
+
 
     private void processMessage(String key, String message) {
         logger.info("Début du traitement du message - Clé: {}", key);
