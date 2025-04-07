@@ -37,15 +37,14 @@ public class KafkaConfiguration {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
-        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 5000);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 60000);
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 20000);
         props.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, 5000);
         props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 60000);
 
-        log.info("Configuration consumer - Bootstrap servers: {}, Group ID: {}, Auto-commit: enabled",
+        log.info("Configuration consumer - Bootstrap servers: {}, Group ID: {}, Auto-commit: disabled",
                 bootstrapServers, groupId);
 
         return new DefaultKafkaConsumerFactory<>(props);
@@ -57,8 +56,8 @@ public class KafkaConfiguration {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
 
-        // Utiliser le mode BATCH ou RECORD avec auto-commit
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
+        // Utiliser le mode d'acquittement manuel
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
 
         // Augmenter les timeouts pour les problèmes de réseau
         factory.getContainerProperties().setPollTimeout(5000);
