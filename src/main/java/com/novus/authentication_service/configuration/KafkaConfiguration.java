@@ -36,6 +36,7 @@ public class KafkaConfiguration {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 
         return new DefaultKafkaConsumerFactory<>(props);
     }
@@ -45,12 +46,14 @@ public class KafkaConfiguration {
         ConcurrentKafkaListenerContainerFactory<String, String> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+
+        // Utiliser le mode BATCH ou RECORD avec auto-commit
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
 
         // Augmenter les timeouts pour les problèmes de réseau
         factory.getContainerProperties().setPollTimeout(5000);
 
-        // Configuration manuelle du coordinateur
+        // Configuration pour les topics manquants
         factory.getContainerProperties().setMissingTopicsFatal(false);
 
         // Amélioration des logs
