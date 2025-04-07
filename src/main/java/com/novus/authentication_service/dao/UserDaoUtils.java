@@ -14,4 +14,8 @@ public class UserDaoUtils {
         this.userDao = new UserDao<>(mongoTemplate);
     }
 
+    public void save(User user) {
+        userDao.save(user);
+    }
+
 }

@@ -1,6 +1,8 @@
 package com.novus.authentication_service.services;
 
+import com.novus.authentication_service.dao.UserDaoUtils;
 import com.novus.shared_models.common.Kafka.KafkaMessage;
+import com.novus.shared_models.common.User.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RegistrationService {
 
+    private final UserDaoUtils userDaoUtils;
+
     public void processRegister(KafkaMessage kafkaMessage) {
         log.info("Processing register request");
 
@@ -19,6 +23,14 @@ public class RegistrationService {
         String username = request.get("username");
         String email = request.get("email");
         String encodedPassword = request.get("password");
+
+        User user = User.builder()
+                .email(email)
+                .password(encodedPassword)
+                .username(username)
+                .build();
+
+        userDaoUtils.save(user);
 
         log.info("User registered successfully: {}", email);
     }
