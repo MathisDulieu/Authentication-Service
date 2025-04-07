@@ -16,7 +16,11 @@ public class Consumer {
 
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
-    @KafkaListener(topics = "authentication-service", groupId = "authentication-groupId")
+    @KafkaListener(
+            topics = "authentication-service",
+            groupId = "authentication-groupId",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void listen(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_KEY) String key,
@@ -25,21 +29,33 @@ public class Consumer {
             @Header(KafkaHeaders.OFFSET) long offset,
             Acknowledgment acknowledgment
     ) {
-        logger.info("Message reçu - Topic: {}, Partition: {}, Offset: {}, Clé: {}, Message: {}",
-                topic, partition, offset, key, message);
+        logger.info("=======================================================");
+        logger.info("MESSAGE REÇU - Détails:");
+        logger.info("Topic: {}", topic);
+        logger.info("Partition: {}", partition);
+        logger.info("Offset: {}", offset);
+        logger.info("Clé: {}", key);
+        logger.info("Contenu: {}", message);
+        logger.info("=======================================================");
 
         try {
             processMessage(key, message);
 
+            // Acquittement manuel du message
             acknowledgment.acknowledge();
-            logger.info("Message traité et acquitté");
+            logger.info("Message acquitté avec succès - Offset: {}", offset);
         } catch (Exception e) {
-            logger.error("Erreur lors du traitement du message: {}", e.getMessage(), e);
+            logger.error("ERREUR lors du traitement du message: {}", e.getMessage(), e);
+            // Vous pourriez décider de ne pas acquitter le message en cas d'erreur
+            // pour qu'il soit relivré, selon votre stratégie de gestion des erreurs
         }
     }
 
     private void processMessage(String key, String message) {
-        logger.info("Traitement du message - Clé: {}, Contenu: {}", key, message);
-    }
+        logger.info("Début du traitement du message - Clé: {}", key);
 
+        // Votre logique de traitement ici
+
+        logger.info("Fin du traitement du message - Clé: {}", key);
+    }
 }
