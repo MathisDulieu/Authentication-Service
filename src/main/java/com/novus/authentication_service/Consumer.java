@@ -28,7 +28,7 @@ public class Consumer {
     private final RegistrationService registrationService;
 
     @KafkaListener(
-            topics = "${kafka.topics.authentication-service}",
+            topics = "authentication-service",
             groupId = "authentication-service-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
