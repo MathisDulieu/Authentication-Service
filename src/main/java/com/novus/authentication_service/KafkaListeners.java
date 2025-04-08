@@ -9,11 +9,7 @@ import org.springframework.stereotype.Component;
 public class KafkaListeners {
     private static final Logger logger = LoggerFactory.getLogger(KafkaListeners.class);
 
-    @KafkaListener(
-            topics = "authenticationTopic",
-            groupId = "groupId",
-            containerFactory = "kafkaListenerContainerFactory"
-    )
+    @KafkaListener(topics = "authenticationTopic", groupId = "authenticationTopic-group")
     void listener(String data) {
         try {
             logger.info("Message reçu: {}", data);
