@@ -38,4 +38,16 @@ public class JwtTokenService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    public String generatePasswordResetToken(String userId) {
+        Instant now = Instant.now();
+        Date expiryDate = Date.from(now.plusMillis(15 * 60 * 1000));
+
+        return Jwts.builder()
+                .setSubject(userId)
+                .claim("type", "password_reset")
+                .setIssuedAt(Date.from(now))
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
 }
