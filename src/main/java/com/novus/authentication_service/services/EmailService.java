@@ -45,13 +45,13 @@ public class EmailService {
 
     public static String getEmailSignature() {
         return "<br>"
-                + "<p>Cordialement,<br>"
-                + "L'équipe SupMap.</p>"
-                + "<p>SupMap - Simplifiez vos itinéraires et vos projets.</p>"
-                + "<p>📞 Assistance : <a href=\"tel:+33614129625\">+33 6 14 12 96 25</a><br>"
-                + "📩 Email : <a href=\"mailto:supmap.application@gmail.com\">supmap.application@gmail.com</a><br>"
-                + "🌐 Site web : <a href=\"https://supmap-application.com\">https://supmap-application.com</a><br>"
-                + "📱 Disponible sur iOS et Android !</p>";
+                + "<p>Best regards,<br>"
+                + "The SupMap Team.</p>"
+                + "<p>SupMap - Simplify your routes and projects.</p>"
+                + "<p>📞 Support: <a href=\"tel:+33614129625\">+33 6 14 12 96 25</a><br>"
+                + "📩 Email: <a href=\"mailto:supmap.application@gmail.com\">supmap.application@gmail.com</a><br>"
+                + "🌐 Website: <a href=\"https://supmap-application.com\">https://supmap-application.com</a><br>"
+                + "📱 Available on iOS and Android!</p>";
     }
 
 }
