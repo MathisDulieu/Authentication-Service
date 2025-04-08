@@ -19,7 +19,7 @@ public class KafkaConsumerService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "navigation-service", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "authentication-service", groupId = "${spring.kafka.consumer.group-id}")
     public void consumeNavigationEvents(
             @Payload KafkaMessage kafkaMessage,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
