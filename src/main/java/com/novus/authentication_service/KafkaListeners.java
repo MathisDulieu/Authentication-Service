@@ -13,4 +13,5 @@ public class KafkaListeners {
     void listener(String data) {
         System.out.println("Date received : " + data);
     }
+
 }
