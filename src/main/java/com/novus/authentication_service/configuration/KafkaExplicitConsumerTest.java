@@ -31,8 +31,8 @@ public class KafkaExplicitConsumerTest implements CommandLineRunner {
         logger.info("=========== TEST EXPLICIT CONSUMER ===========");
 
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
-            consumer.subscribe(List.of("authenticationTopic"));
-            logger.info("Consumer explicite abonné au topic: authenticationTopic");
+            consumer.subscribe(List.of("teste"));
+            logger.info("Consumer explicite abonné au topic: teste");
 
             consumer.poll(Duration.ofMillis(0));
             consumer.commitSync();
