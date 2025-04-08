@@ -60,7 +60,7 @@ public class RegistrationService {
 
             String emailConfirmationToken = jwtTokenService.generateEmailConfirmationToken(user.getId());
 
-            emailService.sendEmail(user.getEmail(), "", getRegisterEmailBody(emailConfirmationToken, username));
+            emailService.sendEmail(user.getEmail(), "Confirm your Supmap account", getRegisterEmailBody(emailConfirmationToken, username));
 
             logUtils.buildAndSaveLog(
                     LogLevel.INFO,
