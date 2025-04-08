@@ -37,6 +37,10 @@ public class ManualKafkaConsumer implements CommandLineRunner {
                 consumer.subscribe(List.of("authenticationTopic"));
                 logger.info("Consumer souscrit manuellement au topic: authenticationTopic");
 
+                consumer.poll(Duration.ofMillis(1000));
+                consumer.commitSync();
+                logger.info("Premier poll et commit effectués pour forcer l'enregistrement du consumer group");
+
                 while (!Thread.currentThread().isInterrupted()) {
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
                     for (ConsumerRecord<String, String> record : records) {
