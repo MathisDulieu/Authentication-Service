@@ -72,7 +72,7 @@ public class Consumer {
                 passwordService.processResetPassword(kafkaMessage);
                 break;
             case "googleLogin":
-                loginService.processLogin(kafkaMessage);
+                loginService.processGoogleLogin(kafkaMessage);
                 break;
             default:
                 log.warn("Unknown operation: {}", operationKey);
