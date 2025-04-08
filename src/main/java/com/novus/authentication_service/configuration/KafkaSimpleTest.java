@@ -17,7 +17,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 @Component
@@ -56,7 +56,7 @@ public class KafkaSimpleTest implements CommandLineRunner {
             }
 
             try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
-                consumer.subscribe(Arrays.asList(topic));
+                consumer.subscribe(List.of(topic));
 
                 boolean messageFound = false;
                 for (int i = 0; i < 5 && !messageFound; i++) {
