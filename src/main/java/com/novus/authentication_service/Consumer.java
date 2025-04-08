@@ -1,9 +1,12 @@
 package com.novus.authentication_service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novus.authentication_service.services.LoginService;
+import com.novus.authentication_service.services.PasswordService;
+import com.novus.authentication_service.services.RegistrationService;
 import com.novus.shared_models.common.Kafka.KafkaMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -12,49 +15,67 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class Consumer {
-    private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
     @Autowired
     private ObjectMapper objectMapper;
 
+    private final LoginService loginService;
+    private final PasswordService passwordService;
+    private final RegistrationService registrationService;
+
     @KafkaListener(topics = "authentication-service", groupId = "${spring.kafka.consumer.group-id}")
     public void consumeAuthenticationEvents(
             @Payload String messageJson,
+            @Header(KafkaHeaders.RECEIVED_KEY) String key,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) long offset,
             Acknowledgment acknowledgment) {
 
         try {
-            logger.info("Message JSON reçu du topic authentication-service [partition: {}, offset: {}]",
-                    partition, offset);
+            log.info("JSON message received from authentication-service topic [key: {}, partition: {}, offset: {}]", key, partition, offset);
 
             KafkaMessage kafkaMessage = objectMapper.readValue(messageJson, KafkaMessage.class);
 
-            logger.info("Message désérialisé: {}", kafkaMessage);
-
-            if (kafkaMessage.getRequest() != null) {
-                String operation = kafkaMessage.getRequest().get("operation");
-                if (operation != null) {
-                    switch (operation) {
-                        case "login":
-                            // Traitement login
-                            break;
-                        case "register":
-                            // Traitement register
-                            break;
-                        default:
-                            logger.warn("Opération inconnue: {}", operation);
-                    }
-                }
-            }
+            handleOperation(key, kafkaMessage);
 
             acknowledgment.acknowledge();
-
         } catch (Exception e) {
-            logger.error("Erreur lors du traitement du message: {}", e.getMessage(), e);
+            log.error("Error processing message: {}", e.getMessage(), e);
             acknowledgment.acknowledge();
+        }
+    }
+
+    private void handleOperation(String operationKey, KafkaMessage kafkaMessage) {
+        log.info("Processing operation: {}", operationKey);
+
+        switch (operationKey) {
+            case "register":
+                registrationService.processRegister(kafkaMessage);
+                break;
+            case "login":
+                loginService.processLogin(kafkaMessage);
+                break;
+            case "confirmEmail":
+                registrationService.processConfirmEmail(kafkaMessage);
+                break;
+            case "resendRegisterConfirmationEmail":
+                registrationService.processResendRegisterConfirmationEmail(kafkaMessage);
+                break;
+            case "sendForgotPasswordEmail":
+                passwordService.processSendForgotPasswordEmail(kafkaMessage);
+                break;
+            case "resetPassword":
+                passwordService.processResetPassword(kafkaMessage);
+                break;
+            case "googleLogin":
+                loginService.processLogin(kafkaMessage);
+                break;
+            default:
+                log.warn("Unknown operation: {}", operationKey);
         }
     }
 }
