@@ -17,6 +17,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.novus.authentication_service.services.EmailService.getEmailSignature;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -55,7 +57,7 @@ public class PasswordService {
 
             String passwordResetToken = jwtTokenService.generatePasswordResetToken(userId);
 
-            emailService.sendEmail(email, "Reset your Supmap password", getRegisterConfirmationEmailBody(passwordResetToken, user.getUsername()));
+            emailService.sendEmail(email, "Reset your Supmap password", getPasswordResetEmailBody(passwordResetToken, user.getUsername()));
 
             logUtils.buildAndSaveLog(
                     LogLevel.INFO,
@@ -156,16 +158,16 @@ public class PasswordService {
         }
     }
 
-    private String getRegisterConfirmationEmailBody(String emailConfirmationToken, String username) {
-        String confirmationLink = envConfiguration.getMailRegisterConfirmationLink() + emailConfirmationToken;
+    private String getPasswordResetEmailBody(String passwordResetToken, String username) {
+        String resetLink = envConfiguration.getResetPasswordLink() + passwordResetToken;
 
         return "<html>"
                 + "<body>"
-                + "<h2>Welcome " + username + "!</h2>"
-                + "<p>Thank you for registering on our application.</p>"
-                + "<p>To activate your account, please click on the following link:</p>"
-                + "<p><a href=\"" + confirmationLink + "\">Confirm my email</a></p>"
-                + "<p>If you did not create an account, please ignore this email.</p>"
+                + "<h2>Hello " + username + ",</h2>"
+                + "<p>To reset your password, please click the link below:</p>"
+                + "<p><a href=\"" + resetLink + "\">Reset my password</a></p>"
+                + "<p>If you did not request this action, please ignore this email.</p>"
+                + getEmailSignature()
                 + "</body>"
                 + "</html>";
     }
