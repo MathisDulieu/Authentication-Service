@@ -17,8 +17,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.novus.authentication_service.services.EmailService.getEmailSignature;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -57,7 +55,7 @@ public class PasswordService {
 
             String passwordResetToken = jwtTokenService.generatePasswordResetToken(userId);
 
-            emailService.sendEmail(email, "Reset your Supmap password", getPasswordResetEmailBody(passwordResetToken, user.getUsername()));
+            emailService.sendEmail(email, "Reset your Supmap password", buildPasswordResetEmail(passwordResetToken, user.getUsername()));
 
             logUtils.buildAndSaveLog(
                     LogLevel.INFO,
@@ -158,18 +156,42 @@ public class PasswordService {
         }
     }
 
-    private String getPasswordResetEmailBody(String passwordResetToken, String username) {
+    public String buildPasswordResetEmail(String passwordResetToken, String username) {
         String resetLink = envConfiguration.getResetPasswordLink() + passwordResetToken;
 
-        return "<html>"
-                + "<body>"
-                + "<h2>Hello " + username + ",</h2>"
-                + "<p>To reset your password, please click the link below:</p>"
-                + "<p><a href=\"" + resetLink + "\">Reset my password</a></p>"
-                + "<p>If you did not request this action, please ignore this email.</p>"
-                + getEmailSignature()
-                + "</body>"
-                + "</html>";
+        return "<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<head>\n" +
+                "    <meta charset=\"UTF-8\">\n" +
+                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+                "    <title>Reset Your Password</title>\n" +
+                "</head>\n" +
+                "<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n" +
+                "    <div style=\"background-color: #f9f9f9; padding: 20px; border-radius: 5px; border-left: 4px solid #4285f4;\">\n" +
+                "        <h2 style=\"color: #4285f4; margin-top: 0;\">Reset Your Password</h2>\n" +
+                "        <p>Hello " + username + ",</p>\n" +
+                "        <p>We received a request to reset your password for your SupMap account. To complete this process, please click on the button below:</p>\n" +
+                "        <div style=\"text-align: center; margin: 30px 0;\">\n" +
+                "            <a href=\"" + resetLink + "\" style=\"background-color: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;\">Reset My Password</a>\n" +
+                "        </div>\n" +
+                "        <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>\n" +
+                "        <p style=\"background-color: #f0f0f0; padding: 10px; border-radius: 5px; word-break: break-all;\"><a href=\"" + resetLink + "\" style=\"color: #4285f4; text-decoration: none;\">" + resetLink + "</a></p>\n" +
+                "        <p><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>\n" +
+                "        <p>If you did not request a password reset, please ignore this email or contact our support team if you have concerns about your account security.</p>\n" +
+                "    </div>\n" +
+                "    <div style=\"margin-top: 30px; font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 20px;\">\n" +
+                "        <p>Best regards,<br>\n" +
+                "        The SupMap Team</p>\n" +
+                "        <div style=\"margin-top: 15px;\">\n" +
+                "            <p>SupMap - Simplify your routes and projects.</p>\n" +
+                "            <p>📞 Support: <a href=\"tel:+33614129625\" style=\"color: #4285f4; text-decoration: none;\">+33 6 14 12 96 25</a><br>\n" +
+                "            📩 Email: <a href=\"mailto:supmap.application@gmail.com\" style=\"color: #4285f4; text-decoration: none;\">supmap.application@gmail.com</a><br>\n" +
+                "            🌐 Website: <a href=\"https://supmap-application.com\" style=\"color: #4285f4; text-decoration: none;\">https://supmap-application.com</a><br>\n" +
+                "            📱 Available on iOS and Android!</p>\n" +
+                "        </div>\n" +
+                "    </div>\n" +
+                "</body>\n" +
+                "</html>";
     }
 
 }
