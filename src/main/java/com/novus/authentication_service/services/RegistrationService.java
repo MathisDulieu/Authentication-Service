@@ -163,6 +163,9 @@ public class RegistrationService {
 
             User user = optionalUser.get();
 
+            user.setLastActivityDate(new Date());
+            userDaoUtils.save(user);
+
             String emailConfirmationToken = jwtTokenService.generateEmailConfirmationToken(userId);
 
             emailService.sendEmail(email, "Confirm your Supmap account", getAccountRegistrationEmail(emailConfirmationToken, user.getUsername()));
@@ -178,9 +181,6 @@ public class RegistrationService {
                     null,
                     userId
             );
-
-            log.info("Confirmation email resent successfully to: {}", email);
-
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -198,7 +198,6 @@ public class RegistrationService {
                     stackTrace,
                     userId
             );
-
             throw new RuntimeException("Failed to resend confirmation email: " + e.getMessage(), e);
         }
     }

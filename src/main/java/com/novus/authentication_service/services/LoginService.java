@@ -123,6 +123,7 @@ public class LoginService {
             );
 
             user.setLastLoginDate(new Date());
+            user.setLastActivityDate(new Date());
             userDaoUtils.save(user);
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
@@ -141,7 +142,6 @@ public class LoginService {
                     stackTrace,
                     userId
             );
-
             throw new RuntimeException("Failed to process Google login: " + e.getMessage(), e);
         }
     }

@@ -53,6 +53,9 @@ public class PasswordService {
 
             User user = optionalUser.get();
 
+            user.setLastActivityDate(new Date());
+            userDaoUtils.save(user);
+
             String passwordResetToken = jwtTokenService.generatePasswordResetToken(userId);
 
             emailService.sendEmail(email, "Reset your Supmap password", buildPasswordResetEmail(passwordResetToken, user.getUsername()));

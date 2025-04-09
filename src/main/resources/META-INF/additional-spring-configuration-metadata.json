@@ -3,67 +3,67 @@
     {
       "name": "supmap.properties.app-email",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.app-email."
+      "description": "The email address used by the application to send notifications and system messages to users."
     },
     {
       "name": "supmap.properties.database-name",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.database-name."
+      "description": "The name of the MongoDB database used by the authentication service to store user credentials and profiles."
     },
     {
       "name": "supmap.properties.default-profile-image",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.default-profile-image."
+      "description": "The URL or path to the default profile image used when a user does not upload a custom avatar."
     },
     {
       "name": "supmap.properties.elasticsearch-password",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.elasticsearch-password."
+      "description": "Password for authenticating with the Elasticsearch instance used for indexing and searching user data."
     },
     {
       "name": "supmap.properties.elasticsearch-url",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.elasticsearch-url."
+      "description": "URL endpoint for the Elasticsearch service used for efficient querying of user profiles and authentication logs."
     },
     {
       "name": "supmap.properties.elasticsearch-username",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.elasticsearch-username."
+      "description": "Username for authenticating with the Elasticsearch instance used for user data indexing."
     },
     {
       "name": "supmap.properties.jwt-secret",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.jwt-secret."
+      "description": "Secret key used for signing JWT tokens to ensure their integrity and authenticity in the authentication process."
     },
     {
       "name": "supmap.properties.kafka-bootstrap-servers",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.kafka-bootstrap-servers."
+      "description": "Comma-separated list of host:port pairs for establishing the initial connection to the Kafka cluster for authentication events."
     },
     {
       "name": "supmap.properties.mail-modified-username",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.mail-modified-username."
+      "description": "Template or subject line used in emails sent to users when their username has been modified."
     },
     {
       "name": "supmap.properties.mail-password",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.mail-password."
+      "description": "Password for the email account used by the application to send authentication-related emails to users."
     },
     {
       "name": "supmap.properties.mongo-uri",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.mongo-uri."
+      "description": "Connection string URI for the MongoDB database, including authentication credentials if required."
     },
     {
       "name": "supmap.properties.mail-register-confirmation-link",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.mail-register-confirmation-link."
+      "description": "URL template for the account confirmation link sent to users via email during the registration process."
     },
     {
       "name": "supmap.properties.reset-password-link",
       "type": "java.lang.String",
-      "description": "Description for supmap.properties.reset-password-link."
+      "description": "URL template for the password reset link sent to users via email when they request to reset their password."
     }
   ]
 }
