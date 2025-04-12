@@ -42,6 +42,7 @@ public class RegistrationService {
                     .email(email)
                     .password(encodedPassword)
                     .username(username)
+                    .profileImage(envConfiguration.getDefaultProfileImage())
                     .build();
 
             userDaoUtils.save(user);
