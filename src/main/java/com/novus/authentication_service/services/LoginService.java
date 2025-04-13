@@ -1,5 +1,6 @@
 package com.novus.authentication_service.services;
 
+import com.novus.authentication_service.configuration.DateConfiguration;
 import com.novus.authentication_service.dao.UserDaoUtils;
 import com.novus.authentication_service.utils.LogUtils;
 import com.novus.shared_models.common.Kafka.KafkaMessage;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,11 +23,13 @@ public class LoginService {
 
     private final UserDaoUtils userDaoUtils;
     private final LogUtils logUtils;
+    private final DateConfiguration dateConfiguration;
 
     public void processLogin(KafkaMessage kafkaMessage) {
         Map<String, String> request = kafkaMessage.getRequest();
         String email = request.get("email");
         String userId = request.get("userId");
+        log.info("Starting to process login request for user with email: {} and ID: {}", email, userId);
 
         try {
             Optional<User> optionalUser = userDaoUtils.findById(userId);
@@ -61,10 +63,12 @@ public class LoginService {
                     userId
             );
 
-            user.setLastLoginDate(new Date());
-            user.setLastActivityDate(new Date());
+            user.setLastLoginDate(dateConfiguration.newDate());
+            user.setLastActivityDate(dateConfiguration.newDate());
             userDaoUtils.save(user);
+            log.info("Login successfully processed for user with email: {} and ID: {}", email, userId);
         } catch (Exception e) {
+            log.error("Error occurred while processing login request: {}", e.getMessage());
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
@@ -89,18 +93,20 @@ public class LoginService {
     public void processGoogleLogin(KafkaMessage kafkaMessage) {
         Map<String, String> request = kafkaMessage.getRequest();
         String userId = request.get("userId");
+        log.info("Starting to process Google login request for user with ID: {}", userId);
 
         try {
             Optional<User> optionalUser = userDaoUtils.findById(userId);
 
             if (optionalUser.isEmpty()) {
+                log.error("User with ID: {} not found during Google login process", userId);
                 logUtils.buildAndSaveLog(
                         LogLevel.ERROR,
                         "GOOGLE_LOGIN_FAILED",
                         kafkaMessage.getIpAddress(),
                         "User not found during Google login process with ID: " + userId,
                         HttpMethod.POST,
-                        "/auth/google-login",
+                        "/oauth/google-login",
                         "authentication-service",
                         null,
                         userId
@@ -116,16 +122,18 @@ public class LoginService {
                     kafkaMessage.getIpAddress(),
                     "User logged in successfully via Google: " + user.getEmail(),
                     HttpMethod.POST,
-                    "/auth/google-login",
+                    "/oauth/google-login",
                     "authentication-service",
                     null,
                     userId
             );
 
-            user.setLastLoginDate(new Date());
-            user.setLastActivityDate(new Date());
+            user.setLastLoginDate(dateConfiguration.newDate());
+            user.setLastActivityDate(dateConfiguration.newDate());
             userDaoUtils.save(user);
+            log.info("Google login successfully processed for user with ID: {} and email: {}", userId, user.getEmail());
         } catch (Exception e) {
+            log.error("Error occurred while processing Google login request: {}", e.getMessage());
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
@@ -137,7 +145,7 @@ public class LoginService {
                     kafkaMessage.getIpAddress(),
                     "Error processing Google login for user ID: " + userId + ", error: " + e.getMessage(),
                     HttpMethod.POST,
-                    "/auth/google-login",
+                    "/oauth/google-login",
                     "authentication-service",
                     stackTrace,
                     userId

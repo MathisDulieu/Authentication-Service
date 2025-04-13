@@ -1,5 +1,6 @@
 package com.novus.authentication_service.services;
 
+import com.novus.authentication_service.configuration.DateConfiguration;
 import com.novus.authentication_service.configuration.EnvConfiguration;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -17,10 +18,11 @@ import java.util.Date;
 public class JwtTokenService {
 
     private final EnvConfiguration envConfiguration;
+    private final DateConfiguration dateConfiguration;
     private static final long TOKEN_EXPIRATION_TIME = 172_800_000;
 
     public String generateEmailConfirmationToken(String userId) {
-        Instant now = Instant.now();
+        Instant now = dateConfiguration.newDate().toInstant();
         Date expiryDate = Date.from(now.plusMillis(TOKEN_EXPIRATION_TIME));
 
         return Jwts.builder()
@@ -39,7 +41,7 @@ public class JwtTokenService {
     }
 
     public String generatePasswordResetToken(String userId) {
-        Instant now = Instant.now();
+        Instant now = dateConfiguration.newDate().toInstant();
         Date expiryDate = Date.from(now.plusMillis(15 * 60 * 1000));
 
         return Jwts.builder()

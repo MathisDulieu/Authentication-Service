@@ -1,5 +1,6 @@
 package com.novus.authentication_service.services;
 
+import com.novus.authentication_service.configuration.DateConfiguration;
 import com.novus.authentication_service.configuration.EnvConfiguration;
 import com.novus.authentication_service.dao.UserDaoUtils;
 import com.novus.authentication_service.utils.LogUtils;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,16 +27,19 @@ public class PasswordService {
     private final EmailService emailService;
     private final JwtTokenService jwtTokenService;
     private final EnvConfiguration envConfiguration;
+    private final DateConfiguration dateConfiguration;
 
     public void processSendForgotPasswordEmail(KafkaMessage kafkaMessage) {
         Map<String, String> request = kafkaMessage.getRequest();
         String userId = request.get("userId");
         String email = request.get("email");
+        log.info("Starting to process forgot password request for user with email: {} and ID: {}", email, userId);
 
         try {
             Optional<User> optionalUser = userDaoUtils.findById(userId);
 
             if (optionalUser.isEmpty()) {
+                log.error("User with ID: {} and email: {} not found when sending password reset email", userId, email);
                 logUtils.buildAndSaveLog(
                         LogLevel.ERROR,
                         "FORGOT_PASSWORD_FAILED",
@@ -53,7 +56,7 @@ public class PasswordService {
 
             User user = optionalUser.get();
 
-            user.setLastActivityDate(new Date());
+            user.setLastActivityDate(dateConfiguration.newDate());
             userDaoUtils.save(user);
 
             String passwordResetToken = jwtTokenService.generatePasswordResetToken(userId);
@@ -71,8 +74,10 @@ public class PasswordService {
                     null,
                     userId
             );
+            log.info("Password reset email successfully sent to: {}", email);
 
         } catch (Exception e) {
+            log.error("Error occurred while processing forgot password request: {}", e.getMessage());
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
@@ -98,11 +103,13 @@ public class PasswordService {
         Map<String, String> request = kafkaMessage.getRequest();
         String userId = request.get("userId");
         String newPassword = request.get("newPassword");
+        log.info("Starting to process reset password request for user with ID: {}", userId);
 
         try {
             Optional<User> optionalUser = userDaoUtils.findById(userId);
 
             if (optionalUser.isEmpty()) {
+                log.error("User with ID: {} not found when resetting password", userId);
                 logUtils.buildAndSaveLog(
                         LogLevel.ERROR,
                         "PASSWORD_RESET_FAILED",
@@ -120,8 +127,8 @@ public class PasswordService {
             User user = optionalUser.get();
 
             user.setPassword(newPassword);
-            user.setUpdatedAt(new Date());
-            user.setLastActivityDate(new Date());
+            user.setUpdatedAt(dateConfiguration.newDate());
+            user.setLastActivityDate(dateConfiguration.newDate());
 
             userDaoUtils.save(user);
 
@@ -136,8 +143,9 @@ public class PasswordService {
                     null,
                     userId
             );
-
+            log.info("Password successfully reset for user with ID: {} and email: {}", userId, user.getEmail());
         } catch (Exception e) {
+            log.error("Error occurred while processing reset password request: {}", e.getMessage());
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);

@@ -22,4 +22,5 @@ public class EnvConfiguration {
     private String mongoUri;
     private String mailRegisterConfirmationLink;
     private String resetPasswordLink;
+    private String mailModifiedUsername;
 }

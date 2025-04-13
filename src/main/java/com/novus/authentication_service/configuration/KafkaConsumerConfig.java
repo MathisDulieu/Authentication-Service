@@ -3,6 +3,7 @@ package com.novus.authentication_service.configuration;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -20,7 +21,9 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     private final EnvConfiguration envConfiguration;
-    private static final String groupId = "authentication-service-group";
+
+    @Value("${spring.kafka.consumer.group-id}")
+    private String groupId;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {

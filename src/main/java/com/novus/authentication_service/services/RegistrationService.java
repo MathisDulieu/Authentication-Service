@@ -1,20 +1,26 @@
 package com.novus.authentication_service.services;
 
 import com.novus.authentication_service.UuidProvider;
+import com.novus.authentication_service.configuration.DateConfiguration;
 import com.novus.authentication_service.configuration.EnvConfiguration;
+import com.novus.authentication_service.dao.AdminDashboardDaoUtils;
 import com.novus.authentication_service.dao.UserDaoUtils;
 import com.novus.authentication_service.utils.LogUtils;
+import com.novus.shared_models.common.AdminDashboard.AdminDashboard;
 import com.novus.shared_models.common.Kafka.KafkaMessage;
 import com.novus.shared_models.common.Log.HttpMethod;
 import com.novus.shared_models.common.Log.LogLevel;
 import com.novus.shared_models.common.User.User;
+import com.novus.shared_models.response.User.MonthlyUserStatsResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,12 +35,15 @@ public class RegistrationService {
     private final EmailService emailService;
     private final JwtTokenService jwtTokenService;
     private final EnvConfiguration envConfiguration;
+    private final DateConfiguration dateConfiguration;
+    private final AdminDashboardDaoUtils adminDashboardDaoUtils;
 
     public void processRegister(KafkaMessage kafkaMessage) {
         Map<String, String> request = kafkaMessage.getRequest();
         String username = request.get("username");
         String email = request.get("email");
         String encodedPassword = request.get("password");
+        log.info("Starting to process registration request for user with email: {} and username: {}", email, username);
 
         try {
             User user = User.builder()
@@ -59,6 +68,54 @@ public class RegistrationService {
                     user.getId()
             );
 
+            Optional<AdminDashboard> optionalAdminDashboard = adminDashboardDaoUtils.find();
+            if (optionalAdminDashboard.isEmpty()) {
+                throw new RuntimeException("Admin dashboard not found");
+            }
+
+            AdminDashboard adminDashboard = optionalAdminDashboard.get();
+
+            List<MonthlyUserStatsResponse> userGrowthStats = adminDashboard.getUserGrowthStats();
+
+            String currentMonth = new SimpleDateFormat("MMM yyyy", Locale.ENGLISH).format(dateConfiguration.newDate());
+
+            boolean monthFound = false;
+            for (MonthlyUserStatsResponse stats : userGrowthStats) {
+                if (stats.getMonth().equals(currentMonth)) {
+                    stats.setNewUsers(stats.getNewUsers() + 1);
+                    stats.setTotalUsers(stats.getTotalUsers() + 1);
+                    monthFound = true;
+                    break;
+                }
+            }
+
+            if (!monthFound) {
+                int previousTotalUsers = 0;
+                if (!userGrowthStats.isEmpty()) {
+                    previousTotalUsers = userGrowthStats.get(userGrowthStats.size() - 1).getTotalUsers();
+                }
+
+                MonthlyUserStatsResponse newMonthStats = MonthlyUserStatsResponse.builder()
+                        .month(currentMonth)
+                        .newUsers(1)
+                        .totalUsers(previousTotalUsers + 1)
+                        .build();
+
+                userGrowthStats.add(newMonthStats);
+            }
+
+            adminDashboardDaoUtils.save(
+                    adminDashboard.getId(),
+                    adminDashboard.getAppRatingByNumberOfRate(),
+                    adminDashboard.getTopContributors(),
+                    userGrowthStats,
+                    adminDashboard.getUserActivityMetrics(),
+                    adminDashboard.getRouteRecalculations(),
+                    adminDashboard.getIncidentConfirmationRate(),
+                    adminDashboard.getIncidentsByType(),
+                    adminDashboard.getTotalRoutesProposed()
+            );
+
             String emailConfirmationToken = jwtTokenService.generateEmailConfirmationToken(user.getId());
 
             emailService.sendEmail(user.getEmail(), "Confirm your Supmap account", getAccountRegistrationEmail(emailConfirmationToken, username));
@@ -74,8 +131,9 @@ public class RegistrationService {
                     null,
                     user.getId()
             );
-
+            log.info("Registration process completed successfully for user: {}", user.getId());
         } catch (Exception e) {
+            log.error("Error occurred while processing registration request: {}", e.getMessage());
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
@@ -101,60 +159,70 @@ public class RegistrationService {
         Map<String, String> request = kafkaMessage.getRequest();
         String userId = request.get("userId");
         String email = request.get("email");
+        log.info("Starting to process email confirmation request for user with email: {} and ID: {}", email, userId);
 
-        Optional<User> optionalUser = userDaoUtils.findById(userId);
+        try {
+            Optional<User> optionalUser = userDaoUtils.findById(userId);
 
-        if (optionalUser.isEmpty()) {
+            if (optionalUser.isEmpty()) {
+                log.error("User with ID: {} and email: {} not found during email confirmation process", userId, email);
+                logUtils.buildAndSaveLog(
+                        LogLevel.ERROR,
+                        "EMAIL_CONFIRMATION_FAILED",
+                        kafkaMessage.getIpAddress(),
+                        "User not found for email confirmation: " + email,
+                        HttpMethod.GET,
+                        "/auth/confirm-email",
+                        "authentication-service",
+                        null,
+                        userId
+                );
+                throw new RuntimeException("User not found for email confirmation with ID: " + userId);
+            }
+
+            User user = optionalUser.get();
+
+            user.setValidEmail(true);
+            user.setUpdatedAt(dateConfiguration.newDate());
+            user.setLastActivityDate(dateConfiguration.newDate());
+            userDaoUtils.save(user);
+
             logUtils.buildAndSaveLog(
-                    LogLevel.ERROR,
-                    "EMAIL_CONFIRMATION_FAILED",
+                    LogLevel.INFO,
+                    "EMAIL_CONFIRMATION_SUCCESS",
                     kafkaMessage.getIpAddress(),
-                    "User not found for email confirmation: " + email,
+                    "Email confirmed successfully for user: " + email,
                     HttpMethod.GET,
                     "/auth/confirm-email",
                     "authentication-service",
                     null,
                     userId
             );
-            throw new RuntimeException("User not found for email confirmation with ID: " + userId);
+            log.info("Email successfully confirmed for user with ID: {} and email: {}", userId, email);
+        } catch (Exception e) {
+            log.error("Error occurred while processing email confirmation request: {}", e.getMessage());
+            throw e;
         }
-
-        User user = optionalUser.get();
-
-        user.setValidEmail(true);
-        user.setUpdatedAt(new Date());
-        user.setLastActivityDate(new Date());
-        userDaoUtils.save(user);
-
-        logUtils.buildAndSaveLog(
-                LogLevel.INFO,
-                "EMAIL_CONFIRMATION_SUCCESS",
-                kafkaMessage.getIpAddress(),
-                "Email confirmed successfully for user: " + email,
-                HttpMethod.GET,
-                "/auth/confirm-email",
-                "authentication-service",
-                null,
-                userId
-        );
     }
 
     public void processResendRegisterConfirmationEmail(KafkaMessage kafkaMessage) {
         Map<String, String> request = kafkaMessage.getRequest();
         String userId = request.get("userId");
         String email = request.get("email");
+        log.info("Starting to process resend confirmation email request for user with email: {} and ID: {}", email, userId);
 
         try {
             Optional<User> optionalUser = userDaoUtils.findById(userId);
 
             if (optionalUser.isEmpty()) {
+                log.error("User with ID: {} and email: {} not found when resending confirmation email", userId, email);
                 logUtils.buildAndSaveLog(
                         LogLevel.ERROR,
                         "RESEND_CONFIRMATION_FAILED",
                         kafkaMessage.getIpAddress(),
                         "User not found for resending confirmation email: " + email,
                         HttpMethod.POST,
-                        "/auth/resend-confirmation",
+                        "/auth/resend/register-confirmation-email",
                         "authentication-service",
                         null,
                         userId
@@ -164,7 +232,7 @@ public class RegistrationService {
 
             User user = optionalUser.get();
 
-            user.setLastActivityDate(new Date());
+            user.setLastActivityDate(dateConfiguration.newDate());
             userDaoUtils.save(user);
 
             String emailConfirmationToken = jwtTokenService.generateEmailConfirmationToken(userId);
@@ -177,12 +245,14 @@ public class RegistrationService {
                     kafkaMessage.getIpAddress(),
                     "Confirmation email resent successfully to: " + email,
                     HttpMethod.POST,
-                    "/auth/resend-confirmation",
+                    "/auth/resend/register-confirmation-email",
                     "authentication-service",
                     null,
                     userId
             );
+            log.info("Confirmation email successfully resent to user with ID: {} and email: {}", userId, email);
         } catch (Exception e) {
+            log.error("Error occurred while processing resend confirmation email request: {}", e.getMessage());
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
@@ -194,7 +264,7 @@ public class RegistrationService {
                     kafkaMessage.getIpAddress(),
                     "Error resending confirmation email to: " + email + ", error: " + e.getMessage(),
                     HttpMethod.POST,
-                    "/auth/resend-confirmation",
+                    "/auth/resend/register-confirmation-email",
                     "authentication-service",
                     stackTrace,
                     userId

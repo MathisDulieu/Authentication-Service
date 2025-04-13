@@ -1,5 +1,6 @@
 package com.novus.authentication_service.services;
 
+import com.novus.authentication_service.configuration.EnvConfiguration;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -20,15 +21,14 @@ public class EmailService {
     @Autowired
     private JavaMailSender javaMailSender;
 
-    private static final String APP_EMAIL = System.getenv("APP_EMAIL");
-    private static final String MAIL_MODIFIED_USERNAME = System.getenv("MAIL_MODIFIED_USERNAME");
+    private final EnvConfiguration envConfiguration;
 
     public void sendEmail(String to, String subject, String body) {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, false, "utf-8");
 
-            helper.setFrom(APP_EMAIL, MAIL_MODIFIED_USERNAME);
+            helper.setFrom(envConfiguration.getAppEmail(), envConfiguration.getMailModifiedUsername());
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(body, true);
