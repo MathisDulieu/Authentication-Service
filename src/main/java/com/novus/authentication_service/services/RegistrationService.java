@@ -54,6 +54,8 @@ public class RegistrationService {
                     .profileImage(envConfiguration.getDefaultProfileImage())
                     .build();
 
+            user.getStats().setRankImage("https://i.ibb.co/dw3g2VJg/Season-2023-Emerald.webp");
+
             userDaoUtils.save(user);
 
             logUtils.buildAndSaveLog(
