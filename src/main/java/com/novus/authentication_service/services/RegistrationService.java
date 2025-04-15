@@ -70,12 +70,31 @@ public class RegistrationService {
                     user.getId()
             );
 
-            Optional<AdminDashboard> optionalAdminDashboard = adminDashboardDaoUtils.find();
-            if (optionalAdminDashboard.isEmpty()) {
-                throw new RuntimeException("Admin dashboard not found");
-            }
+            String emailConfirmationToken = jwtTokenService.generateEmailConfirmationToken(user.getId());
 
-            AdminDashboard adminDashboard = optionalAdminDashboard.get();
+            emailService.sendEmail(user.getEmail(), "Confirm your Supmap account", getAccountRegistrationEmail(emailConfirmationToken, username));
+
+            logUtils.buildAndSaveLog(
+                    LogLevel.INFO,
+                    "CONFIRMATION_EMAIL_SENT",
+                    kafkaMessage.getIpAddress(),
+                    "Confirmation email sent to: " + email,
+                    HttpMethod.POST,
+                    "/auth/register",
+                    "authentication-service",
+                    null,
+                    user.getId()
+            );
+
+            AdminDashboard adminDashboard;
+            Optional<AdminDashboard> optionalAdminDashboard = adminDashboardDaoUtils.find();
+
+            if (optionalAdminDashboard.isEmpty()) {
+                log.info("Admin dashboard not found, creating a new one");
+                adminDashboard = AdminDashboard.builder().build();
+            } else {
+                adminDashboard = optionalAdminDashboard.get();
+            }
 
             List<MonthlyUserStatsResponse> userGrowthStats = adminDashboard.getUserGrowthStats();
 
@@ -118,21 +137,6 @@ public class RegistrationService {
                     adminDashboard.getTotalRoutesProposed()
             );
 
-            String emailConfirmationToken = jwtTokenService.generateEmailConfirmationToken(user.getId());
-
-            emailService.sendEmail(user.getEmail(), "Confirm your Supmap account", getAccountRegistrationEmail(emailConfirmationToken, username));
-
-            logUtils.buildAndSaveLog(
-                    LogLevel.INFO,
-                    "CONFIRMATION_EMAIL_SENT",
-                    kafkaMessage.getIpAddress(),
-                    "Confirmation email sent to: " + email,
-                    HttpMethod.POST,
-                    "/auth/register",
-                    "authentication-service",
-                    null,
-                    user.getId()
-            );
             log.info("Registration process completed successfully for user: {}", user.getId());
         } catch (Exception e) {
             log.error("Error occurred while processing registration request: {}", e.getMessage());
