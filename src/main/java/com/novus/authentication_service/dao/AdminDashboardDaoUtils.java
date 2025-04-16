@@ -22,7 +22,7 @@ public class AdminDashboardDaoUtils {
         this.adminDashboardDao = new AdminDashboardDao<>(mongoTemplate);
     }
 
-    public void save(String adminDashboardId, Map<Integer, Double> appRatingByNumberOfRate,
+    public void upsert(String adminDashboardId, Map<Integer, Double> appRatingByNumberOfRate,
                      List<UserContributionResponse> topContributors, List<MonthlyUserStatsResponse> userGrowthStats,
                      UserActivityMetricsResponse userActivityMetrics, List<HourlyRouteRecalculationResponse> routeRecalculations,
                      Double incidentConfirmationRate, Map<String, Integer> incidentsByType, int totalRoutesProposed
@@ -38,6 +38,10 @@ public class AdminDashboardDaoUtils {
                 incidentsByType,
                 totalRoutesProposed
         );
+    }
+
+    public void save(AdminDashboard adminDashboard) {
+        adminDashboardDao.save(adminDashboard);
     }
 
     public Optional<AdminDashboard> find() {

@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -86,56 +83,17 @@ public class RegistrationService {
                     user.getId()
             );
 
-            AdminDashboard adminDashboard;
-            Optional<AdminDashboard> optionalAdminDashboard = adminDashboardDaoUtils.find();
-
-            if (optionalAdminDashboard.isEmpty()) {
-                log.info("Admin dashboard not found, creating a new one");
-                adminDashboard = AdminDashboard.builder().build();
-            } else {
-                adminDashboard = optionalAdminDashboard.get();
-            }
-
-            List<MonthlyUserStatsResponse> userGrowthStats = adminDashboard.getUserGrowthStats();
-
-            String currentMonth = new SimpleDateFormat("MMM yyyy", Locale.ENGLISH).format(dateConfiguration.newDate());
-
-            boolean monthFound = false;
-            for (MonthlyUserStatsResponse stats : userGrowthStats) {
-                if (stats.getMonth().equals(currentMonth)) {
-                    stats.setNewUsers(stats.getNewUsers() + 1);
-                    stats.setTotalUsers(stats.getTotalUsers() + 1);
-                    monthFound = true;
-                    break;
+            try {
+                Optional<AdminDashboard> optionalAdminDashboard = adminDashboardDaoUtils.find();
+                if (optionalAdminDashboard.isPresent()) {
+                    updateExistingAdminDashboard(optionalAdminDashboard.get());
+                } else {
+                    createNewAdminDashboard();
                 }
+            } catch (Exception e) {
+                log.warn("Error while processing admin dashboard: {}, creating a new one", e.getMessage());
+                createNewAdminDashboard();
             }
-
-            if (!monthFound) {
-                int previousTotalUsers = 0;
-                if (!userGrowthStats.isEmpty()) {
-                    previousTotalUsers = userGrowthStats.get(userGrowthStats.size() - 1).getTotalUsers();
-                }
-
-                MonthlyUserStatsResponse newMonthStats = MonthlyUserStatsResponse.builder()
-                        .month(currentMonth)
-                        .newUsers(1)
-                        .totalUsers(previousTotalUsers + 1)
-                        .build();
-
-                userGrowthStats.add(newMonthStats);
-            }
-
-            adminDashboardDaoUtils.save(
-                    adminDashboard.getId(),
-                    adminDashboard.getAppRatingByNumberOfRate(),
-                    adminDashboard.getTopContributors(),
-                    userGrowthStats,
-                    adminDashboard.getUserActivityMetrics(),
-                    adminDashboard.getRouteRecalculations(),
-                    adminDashboard.getIncidentConfirmationRate(),
-                    adminDashboard.getIncidentsByType(),
-                    adminDashboard.getTotalRoutesProposed()
-            );
 
             log.info("Registration process completed successfully for user: {}", user.getId());
         } catch (Exception e) {
@@ -159,6 +117,74 @@ public class RegistrationService {
 
             throw new RuntimeException("Failed to process registration: " + e.getMessage(), e);
         }
+    }
+
+    private void updateExistingAdminDashboard(AdminDashboard adminDashboard) {
+        String currentMonth = new SimpleDateFormat("MMM yyyy", Locale.ENGLISH).format(dateConfiguration.newDate());
+        List<MonthlyUserStatsResponse> userGrowthStats = adminDashboard.getUserGrowthStats();
+
+        boolean monthFound = false;
+        for (MonthlyUserStatsResponse stats : userGrowthStats) {
+            if (stats.getMonth().equals(currentMonth)) {
+                stats.setNewUsers(stats.getNewUsers() + 1);
+                stats.setTotalUsers(stats.getTotalUsers() + 1);
+                monthFound = true;
+                break;
+            }
+        }
+
+        if (!monthFound) {
+            int previousTotalUsers = 0;
+            if (!userGrowthStats.isEmpty()) {
+                previousTotalUsers = userGrowthStats.get(userGrowthStats.size() - 1).getTotalUsers();
+            }
+
+            MonthlyUserStatsResponse newMonthStats = MonthlyUserStatsResponse.builder()
+                    .month(currentMonth)
+                    .newUsers(1)
+                    .totalUsers(previousTotalUsers + 1)
+                    .build();
+
+            userGrowthStats.add(newMonthStats);
+        }
+
+        adminDashboardDaoUtils.upsert(
+                adminDashboard.getId(),
+                adminDashboard.getAppRatingByNumberOfRate(),
+                adminDashboard.getTopContributors(),
+                userGrowthStats,
+                adminDashboard.getUserActivityMetrics(),
+                adminDashboard.getRouteRecalculations(),
+                adminDashboard.getIncidentConfirmationRate(),
+                adminDashboard.getIncidentsByType(),
+                adminDashboard.getTotalRoutesProposed()
+        );
+
+        log.info("Updated existing admin dashboard with new user registration data");
+    }
+
+    private void createNewAdminDashboard() {
+        log.info("Creating new admin dashboard");
+
+        String currentMonth = new SimpleDateFormat("MMM yyyy", Locale.ENGLISH).format(dateConfiguration.newDate());
+
+        MonthlyUserStatsResponse initialStats = MonthlyUserStatsResponse.builder()
+                .month(currentMonth)
+                .newUsers(1)
+                .totalUsers(1)
+                .build();
+
+        List<MonthlyUserStatsResponse> userGrowthStats = new ArrayList<>();
+        userGrowthStats.add(initialStats);
+
+        AdminDashboard newDashboard = AdminDashboard.builder()
+                .id(uuidProvider.generateUuid())
+                .userGrowthStats(userGrowthStats)
+                .build();
+
+        adminDashboardDaoUtils.save(newDashboard);
+
+        log.info("Created new admin dashboard with initial registration data");
     }
 
     public void processConfirmEmail(KafkaMessage kafkaMessage) {
